@@ -1,0 +1,49 @@
+let native print = console.log
+let native read_interface = require("readline").createInterface({ input: process.stdin, output: process.stdout, terminal: false })
+
+def do _ -> do
+
+def native exit
+    _ -> process.exit()
+
+def native on_line_read
+    i f -> i.on("line", f)
+
+def native convert_to_int
+    x -> +x
+
+def native set_state
+    k s -> process[k] = s
+
+def native get_state
+    k -> process[k]
+
+def native plus
+    a b -> a + b
+
+def native minus
+    a b -> a - b
+
+def fib
+    0 -> 0
+    1 -> 1
+    2 -> 1
+    n -> plus (fib (minus n 1)) (fib (minus n 2))
+
+def process_line
+    line -> case get_state "state" of
+        "waiting" -> case line of
+            "help" -> print "Currnetly implemented commands:\nfib: find fibonacci numbers\nadd: adds 2 numbers\nexit: exits program"
+            "fib" -> do (set_state "state" "fib") (print "Enter a index into the fibonacci numbers:")
+            "add" -> do (set_state "state" "add") (set_state "add_state" "1") (print "Enter two numbers:")
+            "exit" -> exit do
+            _ -> print "Unkown command"
+        "fib" -> do (print (fib (convert_to_int line))) (set_state "state" "waiting")
+        "add" -> case get_state "add_state" of
+            "1" -> do (set_state "add_1" line) (set_state "add_state" "2")
+            "2" -> do (print (plus (convert_to_int (get_state "add_1")) (convert_to_int line))) (set_state "state" "waiting")
+            _ -> do (print "Add state corrupted...\nExiting") (exit do)
+        _ -> do (print "Program state corrupted...\nExiting") (exit do)
+
+def main
+    _ -> do (set_state "state" "waiting") (on_line_read read_interface process_line)
